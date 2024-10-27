@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>Image to Text Translator</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Image to Text Translator</h1>
+        
+        <button id="toggle-sidebar" class="sidebar-toggle">View Recent</button>
+        
+        <!-- Sidebar -->
+        <div id="sidebar" class="sidebar">
+            <h2>Recent Translations</h2>
+            {% for item in history %}
+                <div class="sidebar-item">
+                    <p><strong>File:</strong> {{ item.filename }} - {{ item.timestamp }}</p>
+                    <p class="extracted-text" hidden>{{ item.extracted_text }}</p> <!-- Hidden for modal -->
+                    <p class="translated-text" hidden>{{ item.translated_text }}</p> <!-- Hidden for modal -->
+                    <a href="{{ url_for('download_image', timestamp=item.timestamp) }}">Download Translated Image</a>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Main Content -->
+        <form action="/upload" method="post" enctype="multipart/form-data">
+            <input type="file" name="file" accept="image/*" required>
+            
+            <label for="ocr_language">Select OCR Language (Text Extraction):</label>
+            <select name="ocr_language" id="ocr_language">
+                {% for code, language in languages.items() %}
+                    <option value="{{ code }}">{{ language }}</option>
+                {% endfor %}
+            </select>
+            
+            <label for="language">Select Language for Translation:</label>
+            <select name="language" id="language">
+                {% for code, language in languages.items() %}
+                    <option value="{{ code }}">{{ language }}</option>
+                {% endfor %}
+            </select>
+            
+            <button type="submit">Upload</button>
+        </form>
+
+        {% if extracted_text %}
+            <h2>Extracted Text:</h2>
+            <p>{{ extracted_text }}</p>
+        {% endif %}
+
+        {% if translated_text %}
+            <h2>Translated Text:</h2>
+            <p>{{ translated_text }}</p>
+        {% endif %}
+    </div>
+
+    <!-- Modal for displaying recent text -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Translation Details</h2>
+            <p id="modal-text"></p>
+        </div>
+    </div>
+
+    <script>
+        // JavaScript to toggle sidebar visibility
+        document.getElementById('toggle-sidebar').onclick = function() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('visible');
+        };
+
+        // JavaScript to handle modal display for recent translations
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const extractedText = this.querySelector('.extracted-text').textContent;
+                const translatedText = this.querySelector('.translated-text').textContent;
+
+                // Combine and display in modal
+                document.getElementById('modal-text').innerHTML = `
+                    <strong>Extracted Text:</strong> ${extractedText}<br><br>
+                    <strong>Translated Text:</strong> ${translatedText}
+                `;
+
+                // Show modal
+                document.getElementById('modal').style.display = 'flex';
+            });
+        });
+
+        // Close the modal
+        document.querySelector('.close-button').addEventListener('click', function() {
+            document.getElementById('modal').style.display = 'none';
+        });
+
+        // Close modal when clicking outside of modal-content
+        window.addEventListener('click', function(event) {
+            if (event.target === document.getElementById('modal')) {
+                document.getElementById('modal').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
